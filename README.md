@@ -8,3 +8,7 @@ run 'npm install' in console
 # run
 
 'node app' in console
+
+# test login
+email : test@gmail.com
+pass : testtest
