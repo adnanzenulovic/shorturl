@@ -1,0 +1,217 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <fstream>
+#include <functional>
+
+using namespace std;
+
+class Brod
+{
+
+protected:
+	string marka, model, serijskiBroj;
+	float snagaMotora;
+
+public:
+	Brod(string marka, string model, string serijskiBroj, float snagaMotora = 100.0)
+	{
+		this->marka = marka;
+		this->model = model;
+		this->serijskiBroj = serijskiBroj;
+		this->snagaMotora = snagaMotora;
+	}
+
+	virtual bool serijskiBrojValidan() const = 0;
+
+	friend ostream &operator<<(ostream &out, const Brod &b)
+	{
+		return out << b.marka << " " << b.model << " " << b.serijskiBroj << " " << b.snagaMotora << endl;
+	}
+};
+
+class Camac : public Brod
+{
+
+public:
+	using Brod::Brod;
+
+	bool serijskiBrojValidan() const override
+	{
+		string s = this->serijskiBroj;
+
+		if (any_of(s.begin(), s.end(), [](char c)
+				   { return !isdigit(c) && !islower(c); }))
+			return false;
+
+		return true;
+	}
+};
+
+class Jahta : public Brod
+{
+public:
+	using Brod::Brod;
+
+	bool serijskiBrojValidan() const override
+	{
+		string s = this->serijskiBroj;
+
+		if (!none_of(s.begin(), s.end(), [](char c)
+					 { return !isdigit(c) && !isupper(c); }))
+			return false;
+
+		return true;
+	}
+};
+
+int main()
+{
+	ifstream in("input.txt");
+	ofstream out("output.txt");
+
+	if (!in.is_open())
+		return EXIT_FAILURE;
+
+	vector<Brod *> brodovi;
+	while (!in.eof())
+	{
+
+		char oznaka;
+		string marka, model, serijskiBroj;
+		float snagaMotora;
+
+		in >> oznaka >> marka >> model >> serijskiBroj >> snagaMotora;
+
+		Brod *brod;
+		if (oznaka == 'J')
+		{
+			if (snagaMotora == -1)
+				brod = new Jahta(marka, model, serijskiBroj);
+			else
+				brod = new Jahta(marka, model, serijskiBroj, snagaMotora);
+		}
+		else
+		{
+			if (snagaMotora == -1)
+				brod = new Camac(marka, model, serijskiBroj);
+			else
+				brod = new Camac(marka, model, serijskiBroj, snagaMotora);
+		}
+		brodovi.push_back(brod);
+	}
+}
+#include <fstream>
+#include <iostream>
+#include <algorithm>
+#include <vector>
+#include <string>
+
+using namespace std;
+
+class Racun
+{
+    string nazivBanke, tipKartice, brojRacuna;
+    int godinaVazenja;
+
+public:
+    virtual bool sifraRacunaValidna() const = 0;
+    Racun(string nazivBanke, string tipKartice, string brojRacuna, int godinaVazenja = 2023)
+    {
+        this->nazivBanke = nazivBanke;
+        this->tipKartice = tipKartice;
+        this->brojRacuna = brojRacuna;
+        this->godinaVazenja = godinaVazenja;
+    }
+    friend ostream &operator<<(ostream &out, Racun &r)
+    {
+        return out << r.nazivBanke << " " << r.tipKartice << " "
+                   << r.brojRacuna << " " << r.godinaVazenja << endl;
+    }
+    friend string getSifraRacuna()
+    {
+        return brojRacuna;
+    }
+
+    friend int getGodinaVazenja()
+    {
+        return godinaVazenja;
+    }
+};
+
+class DevizniRacun : public Racun
+{
+public:
+    using Racun::Racun;
+    bool sifraRacunaValidna() const override
+    {
+        string s = sifraRacunaValidna();
+        if (any_of(s.begin(), s.end(), [](char c)
+                   { return !isdigit(c) && !islower(c); }))
+            return false;
+        return true;
+    };
+};
+
+class DinarskiRacun : public Racun
+{
+public:
+    using Racun::Racun;
+    bool sifraRacunaValidna() const override
+    {
+        string s = getSifraRacuna();
+        if (!none_of(s.begin(), s.end(), [](char c)
+                     { return !isdigit(c) && !isupper(c); }))
+            return false;
+        return true;
+    }
+};
+
+int main()
+{
+
+    ifstream in("input.txt");
+    ofstream out("output.txt");
+
+    if (!in.is_open())
+        return EXIT_FAILURE;
+    vector<Racun *> racuni;
+    while (!in.eof())
+    {
+        char oznaka;
+        string nazivBanke;
+        string tipKartice;
+        string brojRacuna;
+        int godinaVazenja;
+        in >> oznaka >> nazivBanke >> tipKartice >> brojRacuna >> godinaVazenja;
+        Racun *r;
+        if (oznaka == 'I')
+        {
+            if (godinaVazenja == 0)
+            {
+                r = new DevizniRacun(nazivBanke, tipKartice, brojRacuna);
+            }
+            else
+                r = new DevizniRacun(nazivBanke, tipKartice, brojRacuna, godinaVazenja);
+        }
+        if (oznaka == 'D')
+        {
+            if (godinaVazenja == 0)
+            {
+                r = new DevizniRacun(nazivBanke, tipKartice, brojRacuna);
+            }
+            else
+                r = new DevizniRacun(nazivBanke, tipKartice, brojRacuna, godinaVazenja);
+        }
+        racuni.push_back(r);
+    }
+
+    stable_sort(racuni.begin(), racuni.end(), [](Racun *r1, Racun *r2)
+                { return r1->getGodinaVazenja() > r2->getGodinaVazenja(); });
+
+    out << **min_element(racuni.begin(), racuni.end(), [](Racun *r1, Racun *r2)
+                         { return r1->getGodinaVazenja() < r2->getGodinaVazenja(); });
+
+    return 0;
+}
